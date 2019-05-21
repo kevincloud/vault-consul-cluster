@@ -120,6 +120,5 @@ export VAULT_ADDR=http://localhost:8200
 export VAULT_TOKEN=root
 echo "export VAULT_ADDR=http://localhost:8200" >> /home/ubuntu/.profile
 echo "export VAULT_TOKEN=root" >> /home/ubuntu/.profile
-echo "export MYSQL_HOST=${MYSQL_HOST}" >> /home/ubuntu/.profile
 echo "export VAULT_ADDR=http://localhost:8200" >> /root/.profile
 echo "export VAULT_TOKEN=root" >> /root/.profile
