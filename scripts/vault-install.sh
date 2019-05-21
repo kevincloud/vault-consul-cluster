@@ -35,7 +35,7 @@ EOF
 echo "Installing systemd service for Vault..."
 sudo bash -c "cat >/etc/systemd/system/vault.service" << 'EOF'
 [Unit]
-Description=Vault secret management tool
+Description=HashiCorp Vault
 Requires=network-online.target
 After=network-online.target
 
