@@ -43,7 +43,7 @@ sudo bash -c "cat >/etc/consul.d/consul-server.json" <<EOF
     "advertise_addr": "$CLIENT_IP",
     "log_level": "DEBUG",
     "enable_syslog": true,
-    "acl_enforce_version_8", false,
+    "acl_enforce_version_8": false,
     "retry_join": ["$CLIENT_IP", "", ""]
 }
 EOF

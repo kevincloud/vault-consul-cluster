@@ -80,10 +80,17 @@ resource "aws_security_group" "consul-server-sg" {
     }
 
     ingress {
-       from_port = 8600
-       to_port = 8600
-       protocol = "tcp"
-       cidr_blocks = ["0.0.0.0/0"]
+        from_port = 8500
+        to_port = 8500
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    ingress {
+        from_port = 8300
+        to_port = 8303
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
     }
 
     egress {
