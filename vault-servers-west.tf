@@ -26,7 +26,7 @@ data "template_file" "vault-setup-west-2" {
 
 resource "aws_instance" "vault-server-west-1" {
     provider = "aws.west"
-    ami = "${data.aws_ami.ubuntu.id}"
+    ami = "${data.aws_ami.ubuntuw.id}"
     instance_type = "t2.micro"
     key_name = "${var.key_pair}"
     vpc_security_group_ids = ["${aws_security_group.vault-server-west-sg.id}"]
@@ -39,7 +39,7 @@ resource "aws_instance" "vault-server-west-1" {
 
 resource "aws_instance" "vault-server-west-2" {
     provider = "aws.west"
-    ami = "${data.aws_ami.ubuntu.id}"
+    ami = "${data.aws_ami.ubuntuw.id}"
     instance_type = "t2.micro"
     key_name = "${var.key_pair}"
     vpc_security_group_ids = ["${aws_security_group.vault-server-west-sg.id}"]

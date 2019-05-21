@@ -33,7 +33,7 @@ data "template_file" "consul-install-west-3" {
 
 resource "aws_instance" "consul-server-west-1" {
     provider = "aws.west"
-    ami = "${data.aws_ami.ubuntu.id}"
+    ami = "${data.aws_ami.ubuntuw.id}"
     instance_type = "t2.micro"
     key_name = "${var.key_pair}"
     vpc_security_group_ids = ["${aws_security_group.consul-server-west-sg.id}"]
@@ -46,7 +46,7 @@ resource "aws_instance" "consul-server-west-1" {
 
 resource "aws_instance" "consul-server-west-2" {
     provider = "aws.west"
-    ami = "${data.aws_ami.ubuntu.id}"
+    ami = "${data.aws_ami.ubuntuw.id}"
     instance_type = "t2.micro"
     key_name = "${var.key_pair}"
     vpc_security_group_ids = ["${aws_security_group.consul-server-west-sg.id}"]
@@ -59,7 +59,7 @@ resource "aws_instance" "consul-server-west-2" {
 
 resource "aws_instance" "consul-server-west-3" {
     provider = "aws.west"
-    ami = "${data.aws_ami.ubuntu.id}"
+    ami = "${data.aws_ami.ubuntuw.id}"
     instance_type = "t2.micro"
     key_name = "${var.key_pair}"
     vpc_security_group_ids = ["${aws_security_group.consul-server-west-sg.id}"]
