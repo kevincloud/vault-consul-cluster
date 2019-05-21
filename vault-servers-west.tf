@@ -28,7 +28,7 @@ resource "aws_instance" "vault-server-west-1" {
     provider = "aws.west"
     ami = "${data.aws_ami.ubuntuw.id}"
     instance_type = "t2.micro"
-    key_name = "${var.key_pair}"
+    key_name = "kevin-sedemos-or"
     vpc_security_group_ids = ["${aws_security_group.vault-server-west-sg.id}"]
     user_data = "${data.template_file.vault-setup-west-1.rendered}"
     
@@ -41,7 +41,7 @@ resource "aws_instance" "vault-server-west-2" {
     provider = "aws.west"
     ami = "${data.aws_ami.ubuntuw.id}"
     instance_type = "t2.micro"
-    key_name = "${var.key_pair}"
+    key_name = "kevin-sedemos-or"
     vpc_security_group_ids = ["${aws_security_group.vault-server-west-sg.id}"]
     user_data = "${data.template_file.vault-setup-west-2.rendered}"
     
