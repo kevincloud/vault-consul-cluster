@@ -9,30 +9,30 @@ pip3 install awscli
 
 mkdir /etc/consul.d
 mkdir -p /opt/consul
-# mkdir -p /opt/consul/plugins
 mkdir -p /root/.aws
 
-sudo bash -c "cat >/root/.aws/config" << 'EOF'
+sudo bash -c "cat >/root/.aws/config" <<EOF
 [default]
 aws_access_key_id=${AWS_ACCESS_KEY}
 aws_secret_access_key=${AWS_SECRET_KEY}
 EOF
-sudo bash -c "cat >/root/.aws/credentials" << 'EOF'
+sudo bash -c "cat >/root/.aws/credentials" <<EOF
 [default]
 aws_access_key_id=${AWS_ACCESS_KEY}
 aws_secret_access_key=${AWS_SECRET_KEY}
 EOF
 
 echo "Installing Consul..."
-export CLIENT_IP=`ifconfig eth0 | grep "inet " | awk -F' ' '{print $2}'`
-wget https://releases.hashicorp.com/consul/1.4.4/consul_1.4.4_linux_amd64.zip
-sudo unzip consul_1.4.4_linux_amd64.zip -d /usr/local/bin/
+export CLIENT_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`
+export PUBLIC_IP=`curl http://169.254.169.254/latest/meta-data/public-ipv4`
+curl -sfLo "consul.zip" "${CONSUL_DL_URL}"
+sudo unzip consul.zip -d /usr/local/bin/
 
 # Server configuration
 sudo bash -c "cat >/etc/consul.d/consul-server.json" <<EOF
 {
     "data_dir": "/opt/consul",
-    "datacenter": "dc1",
+    "datacenter": "${AWS_REGION}",
     "node_name": "consul-server-${CONSUL_ID}",
     "bind_addr": "0.0.0.0",
     "client_addr": "0.0.0.0",
@@ -44,13 +44,13 @@ sudo bash -c "cat >/etc/consul.d/consul-server.json" <<EOF
     "log_level": "DEBUG",
     "enable_syslog": true,
     "acl_enforce_version_8": false,
-    "retry_join": ["$CLIENT_IP", "", ""]
+    "retry_join": ["provider=aws tag_key=${CONSUL_JOIN_KEY} tag_value=${CONSUL_JOIN_VALUE} region=${AWS_REGION}"]
 }
 EOF
 
 # Set Consul up as a systemd service
 echo "Installing systemd service for Consul..."
-sudo bash -c "cat >/etc/systemd/system/consul.service" << 'EOF'
+sudo bash -c "cat >/etc/systemd/system/consul.service" <<EOF
 [Unit]
 Description=Hashicorp Consul
 Requires=network-online.target
@@ -75,5 +75,7 @@ EOF
 
 sudo systemctl start consul
 sudo systemctl enable consul
+
+sudo consul license put "${CONSUL_LICENSE}" > /root/license.txt
 
 echo "Consul installation complete."
