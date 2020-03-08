@@ -135,45 +135,45 @@ seal "awskms" {
       kms_key_id    = "${AWS_KMS_KEY_ID}"
 }
 
-api_addr = "$HTTP_PROTOCOL://$CLIENT_IP:8200"
+api_addr = "$HTTP_PROTOCOL://$PUBLIC_IP:8200"
 ui = true
 EOF
 
-echo "Creating self-signed certificate configuration file..."
-sudo bash -c "cat >/root/ca/openssl.cnf" <<EOF
-[req]
-distinguished_name = req_distinguished_name
-x509_extensions = v3_req
-prompt = no
+# echo "Creating self-signed certificate configuration file..."
+# sudo bash -c "cat >/root/ca/openssl.cnf" <<EOF
+# [req]
+# distinguished_name = req_distinguished_name
+# x509_extensions = v3_req
+# prompt = no
 
-[req_distinguished_name]
-C = US
-ST = Georgia
-L =  Atlanta
-O = HashiCorp
-CN = *
+# [req_distinguished_name]
+# C = US
+# ST = Georgia
+# L =  Atlanta
+# O = HashiCorp
+# CN = *
 
-[v3_req]
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid,issuer
-basicConstraints = CA:TRUE
-subjectAltName = @alt_names
+# [v3_req]
+# subjectKeyIdentifier = hash
+# authorityKeyIdentifier = keyid,issuer
+# basicConstraints = CA:TRUE
+# subjectAltName = @alt_names
 
-[alt_names]
-DNS.1 = *
-DNS.2 = *.*
-DNS.3 = *.*.*
-DNS.4 = *.*.*.*
-DNS.5 = *.*.*.*.*
-DNS.6 = *.*.*.*.*.*
-DNS.7 = *.*.*.*.*.*.*
-IP.1 = $CLIENT_IP
-IP.2 = $PUBLIC_IP
-EOF
+# [alt_names]
+# DNS.1 = *
+# DNS.2 = *.*
+# DNS.3 = *.*.*
+# DNS.4 = *.*.*.*
+# DNS.5 = *.*.*.*.*
+# DNS.6 = *.*.*.*.*.*
+# DNS.7 = *.*.*.*.*.*.*
+# IP.1 = $CLIENT_IP
+# IP.2 = $PUBLIC_IP
+# EOF
 
-echo "Creating the self-signed certification..."
-openssl req -x509 -batch -nodes -newkey rsa:2048 -keyout /root/ca/vault.key -out /root/ca/vault.crt -config /root/ca/openssl.cnf -days 9999
-cat /root/ca/vault.crt >> /etc/ssl/certs/ca-certificates.crt
+# echo "Creating the self-signed certification..."
+# openssl req -x509 -batch -nodes -newkey rsa:2048 -keyout /root/ca/vault.key -out /root/ca/vault.crt -config /root/ca/openssl.cnf -days 9999
+# cat /root/ca/vault.crt >> /etc/ssl/certs/ca-certificates.crt
 
 # Set Vault up as a systemd service
 echo "Installing systemd service for Vault..."
@@ -210,7 +210,12 @@ echo "Vault ID is ${VAULT_ID}"
 if [ ${VAULT_ID} -eq 1 ]; then
     sleep 10
     echo "Waiting for Consul..."
+
     while [ -z "$(curl -s http://127.0.0.1:8500/v1/status/leader)" ]; do
+        sleep 2
+    done
+
+    while [ -z "$(curl -s $VAULT_ADDR/v1/status)" ]; do
         sleep 2
     done
 
@@ -236,3 +241,45 @@ if [ ${VAULT_ID} -eq 1 ]; then
 fi
 
 echo "Vault installation complete!"
+
+if [ "${VAULT_PRIMARY_REGION}" = "${AWS_REGION}" ] && [ "${VAULT_ID}" -eq 1 ] ; then 
+    echo "Primary Cluster"
+
+    echo "Secondary Cluster IP: ${SECONDARY_CONSUL_IP}"
+
+    if [ "${VAULT_REPLICATION_TYPE}" = "dr" ]; then 
+        echo "Enabling DR Replication"
+        vault write -f sys/replication/dr/primary/enable
+
+        export VAULT_SECONDARY_TOKEN="$(vault write sys/replication/dr/primary/secondary-token id="secondary-1" | grep -oP 'wrapping_token:[ ]*\K.*')"
+
+        consul kv put vault_primary_cluster_ip $PUBLIC_IP
+        consul kv put vault_secondary_token $VAULT_SECONDARY_TOKEN
+    else
+        echo "Enabling Performance Replication"
+    fi
+elif [ "${VAULT_PRIMARY_REGION}" != "${AWS_REGION}" ] && [ "${VAULT_ID}" -eq 1 ]; then 
+    echo "Secondary Cluster"
+
+    echo "Secondary Cluster IP: ${PRIMARY_CONSUL_IP}"
+
+    if [ "${VAULT_REPLICATION_TYPE}" = "dr" ]; then 
+        echo "Enabling DR Replication"
+
+        echo "Waiting for Secondary Token"
+        while [ -z "$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_secondary_token)" ]; do
+            sleep 2
+        done
+        echo "Secondary Token Received"
+
+        vault write sys/replication/dr/secondary/enable \
+            token="$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_secondary_token | jq -r '.[0].Value' | base64 --decode)" \
+            primary_api_addr="http://$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_primary_cluster_ip | jq -r '.[0].Value' | base64 --decode):8200"
+
+        echo "Secondary Token Written"
+
+    else
+        echo "Enabling Performance Replication"
+    fi
+
+fi
