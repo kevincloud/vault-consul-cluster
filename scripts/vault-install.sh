@@ -250,14 +250,14 @@ if [ "${VAULT_PRIMARY_REGION}" = "${AWS_REGION}" ] && [ "${VAULT_ID}" -eq 1 ] ; 
     if [ "${VAULT_REPLICATION_TYPE}" = "dr" ]; then 
         echo "Enabling DR Replication"
         vault write -f sys/replication/dr/primary/enable
-
         export VAULT_SECONDARY_TOKEN="$(vault write sys/replication/dr/primary/secondary-token id="secondary-1" | grep -oP 'wrapping_token:[ ]*\K.*')"
-
-        consul kv put vault_primary_cluster_ip $PUBLIC_IP
-        consul kv put vault_secondary_token $VAULT_SECONDARY_TOKEN
     else
         echo "Enabling Performance Replication"
+        vault write -f sys/replication/performance/primary/enable
+        export VAULT_SECONDARY_TOKEN="$(vault write sys/replication/performance/primary/secondary-token id="secondary-1" | grep -oP 'wrapping_token:[ ]*\K.*')"
     fi
+    consul kv put vault_primary_cluster_ip $PUBLIC_IP
+    consul kv put vault_secondary_token $VAULT_SECONDARY_TOKEN
 elif [ "${VAULT_PRIMARY_REGION}" != "${AWS_REGION}" ] && [ "${VAULT_ID}" -eq 1 ]; then 
     echo "Secondary Cluster"
 
@@ -280,6 +280,18 @@ elif [ "${VAULT_PRIMARY_REGION}" != "${AWS_REGION}" ] && [ "${VAULT_ID}" -eq 1 ]
 
     else
         echo "Enabling Performance Replication"
+
+        echo "Waiting for Secondary Token"
+        while [ -z "$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_secondary_token)" ]; do
+            sleep 2
+        done
+        echo "Secondary Token Received"
+
+        vault write sys/replication/performance/secondary/enable \
+            token="$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_secondary_token | jq -r '.[0].Value' | base64 --decode)" \
+            primary_api_addr="http://$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_primary_cluster_ip | jq -r '.[0].Value' | base64 --decode):8200"
+
+        echo "Secondary Token Written"
     fi
 
 fi
