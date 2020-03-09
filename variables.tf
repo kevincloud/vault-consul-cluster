@@ -38,6 +38,14 @@ variable "consul_dl_url" {
     description = "URL to download Consul Enterprise"
 }
 
+variable "vault_replication_type" {
+    description = "Vault's replication mode. performance or dr"
+}
+
+variable "vault_primary_region" {
+    description = "Vault's primary cluster region. Example: us-east-1"
+}
+
 variable "consul_join_key_r1" {
     description = "Key for K/V for joining Consul"
 }
