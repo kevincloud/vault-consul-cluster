@@ -219,11 +219,12 @@ sudo systemctl enable vault
 
 echo "Setting up environment variables..."
 
-if [ "${VAULT_PRIMARY_REGION}" = "${AWS_REGION}" ]; then 
-    export VAULT_ADDR="$HTTP_PROTOCOL://${VAULT_DOMAIN}:8200"
-else
-    export VAULT_ADDR="$HTTP_PROTOCOL://$CLIENT_IP:8200"
-fi
+# if [ "${VAULT_PRIMARY_REGION}" = "${AWS_REGION}" ]; then 
+# else
+#     export VAULT_ADDR="$HTTP_PROTOCOL://$CLIENT_IP:8200"
+# fi
+
+export VAULT_ADDR="$HTTP_PROTOCOL://${VAULT_DOMAIN}:8200"
 
 
 echo "Vault ID is ${VAULT_ID}"

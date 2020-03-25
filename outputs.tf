@@ -38,6 +38,13 @@ output "zz-vault-r2-ui" {
     value = "${var.auto_secure == 1 ? "https" : "http"}://${module.vault-r2.vault-servers.0.public_ip}:8200/"
 }
 
+output "zz-vault-r1-ui-dns" {
+    value = "${var.auto_secure == 1 ? "https" : "http"}://vaultcl-a.hashidemos.io:8200/"
+}
+
+output "zz-vault-r2-ui-dns" {
+    value = "${var.auto_secure == 1 ? "https" : "http"}://vaultcl-b.hashidemos.io:8200/"
+}
 
 
 

@@ -13,8 +13,8 @@ provider "aws" {
 }
 
 provider "acme" {
-  server_url = "https://acme-staging.api.letsencrypt.org/directory"
-  # server_url = "https://acme-v02.api.letsencrypt.org/directory"
+  # server_url = "https://acme-staging.api.letsencrypt.org/directory"
+  server_url = "https://acme-v02.api.letsencrypt.org/directory"
 }
 
 resource "aws_iam_role" "consul-tag-role" {
@@ -36,16 +36,16 @@ resource "aws_iam_instance_profile" "consul-tag-profile" {
     role = aws_iam_role.consul-tag-role.name
 }
 
-data "aws_route53_zone" "hashizone" {
+data "aws_route53_zone" "hashizone-r1" {
     provider = aws.r1
     name            = "hashidemos.io."
     private_zone    = false
 }
 
-resource "aws_route53_record" "privatemodules" {
+resource "aws_route53_record" "vault-r1" {
     provider = aws.r1
-    zone_id = data.aws_route53_zone.hashizone.zone_id
-    name = "vaultcl-${var.unit_suffix}.${data.aws_route53_zone.hashizone.name}"
+    zone_id = data.aws_route53_zone.hashizone-r1.zone_id
+    name = "vaultcl-a.${data.aws_route53_zone.hashizone-r1.name}"
     type = "A"
     ttl = "300"
     geolocation_routing_policy {
@@ -55,6 +55,28 @@ resource "aws_route53_record" "privatemodules" {
     set_identifier = "geomodule"
     records = [
         module.vault-r1.vault-servers.0.public_ip
+    ]
+}
+
+data "aws_route53_zone" "hashizone-r2" {
+    provider = aws.r2
+    name            = "hashidemos.io."
+    private_zone    = false
+}
+
+resource "aws_route53_record" "vault-r2" {
+    provider = aws.r2
+    zone_id = data.aws_route53_zone.hashizone-r2.zone_id
+    name = "vaultcl-b.${data.aws_route53_zone.hashizone-r2.name}"
+    type = "A"
+    ttl = "300"
+    geolocation_routing_policy {
+        continent = "NA"
+        country = "*"
+    }
+    set_identifier = "geomodule"
+    records = [
+        module.vault-r2.vault-servers.0.public_ip
     ]
 }
 
@@ -69,7 +91,8 @@ resource "acme_registration" "reg" {
 
 resource "acme_certificate" "certificate" {
   account_key_pem           = acme_registration.reg.account_key_pem
-  common_name               = "vaultcl-${var.unit_suffix}.hashidemos.io"
+  common_name               = "vaultcl-a.hashidemos.io"
+  subject_alternative_names = ["vaultcl-b.hashidemos.io"]
   
   dns_challenge {
     provider = "route53"
@@ -188,7 +211,7 @@ module "vault-r1" {
   vault_tls_private_key = acme_certificate.certificate.private_key_pem
   vault_tls_chain = acme_certificate.certificate.issuer_pem
 
-  vault_domain = "vaultcl-${var.unit_suffix}.hashidemos.io"
+  vault_domain = "vaultcl-a.hashidemos.io"
 
 }
 
@@ -235,5 +258,5 @@ module "vault-r2" {
   vault_tls_private_key = acme_certificate.certificate.private_key_pem
   vault_tls_chain = acme_certificate.certificate.issuer_pem
 
-  vault_domain = "vaultcl-${var.unit_suffix}.hashidemos.io"
+  vault_domain = "vaultcl-b.hashidemos.io"
 }
