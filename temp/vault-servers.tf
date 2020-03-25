@@ -178,6 +178,3 @@ resource "aws_lb_listener" "primary-vault-lb-listener" {
 
 
 }
-
-
-

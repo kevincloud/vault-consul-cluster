@@ -3,7 +3,10 @@
 
 echo "Preparing to install Consul..."
 sudo apt-get -y update > /dev/null 2>&1
-sudo apt-get -y upgrade > /dev/null 2>&1
+
+# Grub Bootloader issue, commenting out for now
+# sudo apt-get -y upgrade > /dev/null 2>&1
+
 sudo apt-get install -y unzip jq python3 python3-pip > /dev/null 2>&1
 pip3 install awscli
 
