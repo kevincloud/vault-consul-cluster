@@ -13,7 +13,8 @@ provider "aws" {
 }
 
 provider "acme" {
-  server_url = "https://acme-v02.api.letsencrypt.org/directory"
+  server_url = "https://acme-staging.api.letsencrypt.org/directory"
+  # server_url = "https://acme-v02.api.letsencrypt.org/directory"
 }
 
 resource "aws_iam_role" "consul-tag-role" {
@@ -185,6 +186,10 @@ module "vault-r1" {
 
   vault_tls_cert = acme_certificate.certificate.certificate_pem
   vault_tls_private_key = acme_certificate.certificate.private_key_pem
+  vault_tls_chain = acme_certificate.certificate.issuer_pem
+
+  vault_domain = "vaultcl-${var.unit_suffix}.hashidemos.io"
+
 }
 
 module "vault-r2" {
@@ -228,4 +233,7 @@ module "vault-r2" {
 
   vault_tls_cert = acme_certificate.certificate.certificate_pem
   vault_tls_private_key = acme_certificate.certificate.private_key_pem
+  vault_tls_chain = acme_certificate.certificate.issuer_pem
+
+  vault_domain = "vaultcl-${var.unit_suffix}.hashidemos.io"
 }

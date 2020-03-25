@@ -34,7 +34,10 @@ resource "aws_instance" "vault-server" {
         SECONDARY_CONSUL_IP = var.secondary_consul_ip
 
         TLS_CERT = var.vault_tls_cert
+        TLS_CHAIN = var.vault_tls_chain
         TLS_PRIVATE_KEY = var.vault_tls_private_key
+
+        VAULT_DOMAIN = var.vault_domain
     })
 
     

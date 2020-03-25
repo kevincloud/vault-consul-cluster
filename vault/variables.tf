@@ -110,6 +110,14 @@ variable "vault_tls_cert" {
     description = "Vault TLS Certificate"
 }
 
+variable "vault_tls_chain" {
+    description = "Vault TLS Chain"
+}
+
 variable "vault_tls_private_key" {
     description = "Vault TLS Private Key"
+}
+
+variable "vault_domain" {
+    description = "vault_domain"
 }

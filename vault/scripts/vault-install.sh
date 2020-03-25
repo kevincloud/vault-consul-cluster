@@ -15,7 +15,7 @@ mkdir -p /etc/consul.d
 mkdir -p /root/.aws
 mkdir -p /root/ca
 
-if [ $AUTO_HTTPS -eq 1 ]; then
+if [ ${AUTO_HTTPS} -eq 1 ]; then
     export HTTP_PROTOCOL="https"
 else
     export HTTP_PROTOCOL="http"
@@ -36,6 +36,7 @@ EOF
 # Copy our LetsEncrypt cert into file
 sudo bash -c "cat >/root/ca/vault.crt" <<EOF
 ${TLS_CERT}
+${TLS_CHAIN}
 EOF
 
 # Copy our LetsEncrypt private key into file
@@ -217,7 +218,13 @@ sudo systemctl start vault
 sudo systemctl enable vault
 
 echo "Setting up environment variables..."
-export VAULT_ADDR=$HTTP_PROTOCOL://$CLIENT_IP:8200
+
+if [ "${VAULT_PRIMARY_REGION}" = "${AWS_REGION}" ]; then 
+    export VAULT_ADDR="$HTTP_PROTOCOL://${VAULT_DOMAIN}:8200"
+else
+    export VAULT_ADDR="$HTTP_PROTOCOL://$CLIENT_IP:8200"
+fi
+
 
 echo "Vault ID is ${VAULT_ID}"
 if [ ${VAULT_ID} -eq 1 ]; then
@@ -227,6 +234,10 @@ if [ ${VAULT_ID} -eq 1 ]; then
     while [ -z "$(curl -s http://127.0.0.1:8500/v1/status/leader)" ]; do
         sleep 2
     done
+    
+    echo "Checking Vault status"
+
+    echo $VAULT_ADDR
 
     while [ -z "$(curl -s $VAULT_ADDR/v1/status)" ]; do
         sleep 2
@@ -287,7 +298,7 @@ elif [ "${VAULT_PRIMARY_REGION}" != "${AWS_REGION}" ] && [ "${VAULT_ID}" -eq 1 ]
 
         vault write sys/replication/dr/secondary/enable \
             token="$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_secondary_token | jq -r '.[0].Value' | base64 --decode)" \
-            primary_api_addr="http://$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_primary_cluster_ip | jq -r '.[0].Value' | base64 --decode):8200"
+            primary_api_addr="$HTTP_PROTOCOL://$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_primary_cluster_ip | jq -r '.[0].Value' | base64 --decode):8200"
 
         echo "Secondary Token Written"
 
@@ -302,7 +313,7 @@ elif [ "${VAULT_PRIMARY_REGION}" != "${AWS_REGION}" ] && [ "${VAULT_ID}" -eq 1 ]
 
         vault write sys/replication/performance/secondary/enable \
             token="$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_secondary_token | jq -r '.[0].Value' | base64 --decode)" \
-            primary_api_addr="http://$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_primary_cluster_ip | jq -r '.[0].Value' | base64 --decode):8200"
+            primary_api_addr="$HTTP_PROTOCOL://$(curl -s http://${PRIMARY_CONSUL_IP}:8500/v1/kv/vault_primary_cluster_ip | jq -r '.[0].Value' | base64 --decode):8200"
 
         echo "Secondary Token Written"
     fi
